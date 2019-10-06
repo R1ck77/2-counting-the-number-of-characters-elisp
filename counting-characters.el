@@ -6,12 +6,13 @@
 
 (defun count-characters ()
   (interactive)
-  (let ((minibuffer-message-timeout 1)
-        (text ""))
+  (let ((text ""))
     (while (cc--emptyp text)
       (setq text (read-string prompt-text))
       (if (cc--emptyp text)
-          (message "Enter some text")
+          (progn
+            (message "Enter some text")
+            (sit-for 1))
         (insert (format output-format-string text (length text)))))))
 
 (provide 'counting-characters)
