@@ -1,4 +1,6 @@
 (require 'cl)
+(setq load-path (cons "." load-path))
+(require 'counting-characters-storage)
 
 (defconst prompt-text "What is the input string? ")
 (defconst output-format-string "%s has %d characters")
@@ -20,10 +22,10 @@
   (sit-for (cc--get-minibuffer-message-timeout)))
 
 (defun cc--remove-insertion-selection (insertion-beginning)
-  (let ((old-insertion-end (function-get 'cc--minibuffer-setup-hook 'insertion-end)))
+  (let ((old-insertion-end (second (ccs--load-region))))
     (when old-insertion-end
       (delete-region insertion-beginning old-insertion-end)
-      (function-put 'cc--minibuffer-setup-hook 'insertion-end nil))))
+      (ccs--clear-end))))
 
 (defun cc--insert-text (insertion-start text)
   (cc--remove-insertion-selection insertion-start)
@@ -37,26 +39,22 @@
       (let ((insertion-text (minibuffer-contents)))
         (with-current-buffer buffer
           (cc--insert-text insertion-beginning insertion-text)
-          (function-put 'cc--minibuffer-setup-hook 'insertion-end (point)))))))
+          (ccs--save-end (point)))))))
 
 (defun cc--minibuffer-setup-hook ()
   (add-hook 'after-change-functions
-            (cc--after-change-function-generator (function-get 'cc--minibuffer-setup-hook 'buffer)
-                                                 (function-get 'cc--minibuffer-setup-hook 'insertion-beginning))
+            (cc--after-change-function-generator (ccs--load-buffer)
+                                                 (first (ccs--load-region)))
             nil t))
 
 (defun cc--minibuffer-exit-hook ()
   (remove-hook 'after-change-functions t)
   (cc--remove-hooks))
 
-(defun cc--clear-contextual-properties ()
-  (function-put 'cc--minibuffer-setup-hook 'buffer nil)
-  (function-put 'cc--minibuffer-setup-hook 'insertion-beginning nil)
-  (function-put 'cc--minibuffer-setup-hook 'insertion-end nil))
 
 (defun cc--add-hooks ()
-  (function-put 'cc--minibuffer-setup-hook 'buffer (current-buffer))
-  (function-put 'cc--minibuffer-setup-hook 'insertion-beginning (point))
+  (ccs--save-buffer (current-buffer))
+  (ccs--save-beginning (point))
   (add-hook 'minibuffer-setup-hook 'cc--minibuffer-setup-hook)
   (add-hook 'minibuffer-exit-hook 'cc--minibuffer-exit-hook))
 
@@ -70,7 +68,7 @@
 
 (defun count-characters ()
   (interactive)
-  (cc--clear-contextual-properties)
+  (ccs--clear)
   (let ((text "")
         (insertion-start (point)))
     (while (cc--emptyp text)
