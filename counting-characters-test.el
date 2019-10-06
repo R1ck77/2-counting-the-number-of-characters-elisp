@@ -5,7 +5,7 @@
 
 (defconst some-text "Input by user")
 
-(describe "all tests"
+(describe "counting-characters.el"
   (describe "count-characters"
     (it "prompts for a string using the correct text"
       (spy-on 'read-string :and-return-value "Something")
